@@ -3,8 +3,8 @@
 
 from django.shortcuts import render_to_response
 from django.template import RequestContext
-from bidu.core.forms import SearchForm
-from bidu.core.models import Word
+from pylyglot.core.forms import SearchForm
+from pylyglot.core.models import Word
 
 def index(request):
 
