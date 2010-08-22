@@ -5,7 +5,6 @@ from django.shortcuts import render_to_response
 from django.template import RequestContext
 from bidu.core.forms import SearchForm
 from bidu.core.models import Word
-from bidu.translations.models import Translation
 
 def index(request):
 
