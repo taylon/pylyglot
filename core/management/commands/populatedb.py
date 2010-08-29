@@ -75,7 +75,10 @@ class Command(BaseCommand):
         conffiles.sort()
 
         for f in conffiles:
+            t1 = datetime.now()
             self.populate_db(f)
+            t2 = datetime.now()
+            logging.info("Package added in %s seconds." % (t2 - t1).seconds)
 
     @transaction.commit_manually
     def populate_db(self, pfile):
@@ -113,13 +116,16 @@ class Command(BaseCommand):
             for entry in valid_entries:
                 if entry.translated():
                     if entry.msgid_plural:
-                        entry.msgstr = entry.msgstr_plural.pop('0')
-                        entry.msgstr_plural = entry.msgstr_plural.pop('1')
+                        entry.msgstr = entry.msgstr_plural.get('0', '')
+                        entry.msgstr_plural = entry.msgstr_plural.get('1', '')
 
-                        self.add_sentence(entry, language, package, revisiondate)
-                        self.add_sentence(entry, language, package, revisiondate, True)
+                        if entry.msgstr:
+                            self.add_sentence(entry, language, package, revisiondate)
+                        if entry.msgstr_plural:
+                            self.add_sentence(entry, language, package, revisiondate, True)
                     else:
-                        self.add_sentence(entry, language, package, revisiondate)
+                        if entry.msgstr:
+                            self.add_sentence(entry, language, package, revisiondate)
 
         except Exception, e:
             logging.error("Failed to create sentences: %s" % str(e))
@@ -158,10 +164,16 @@ class Command(BaseCommand):
 
     def add_translation(self, entry, msgstr, language, package, revisiondate):
         # Add translation
-        translation, created = Translation.objects.get_or_create(msgstr=msgstr, language=language, package=package)
-        translation.translated = entry.translated()
-        if created or revisiondate > translation.revisiondate:
+        translation = Translation.objects.filter(msgstr=msgstr, language=language, package=package)
+        if translation:
+            translation = translation[0]
+            if revisiondate > translation.revisiondate:
+                translation.revisiondate = revisiondate
+        else:
+            translation = Translation(msgstr=msgstr, language=language, package=package)
             translation.revisiondate = revisiondate
+
+        translation.translated = entry.translated()
         translation.save()
 
         return translation
